@@ -1,246 +1,138 @@
 package com.zetcode;
 
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.FontMetrics;
-import java.awt.Graphics;
-import java.awt.Image;
-import java.awt.Toolkit;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
-import javax.swing.ImageIcon;
-import javax.swing.JPanel;
-import javax.swing.Timer;
+import java.util.Random;
 
-public class Board extends JPanel implements ActionListener {
+public class Shape {
 
-    private final int B_WIDTH = 300;
-    private final int B_HEIGHT = 300;
-    private final int DOT_SIZE = 10;
-    private final int ALL_DOTS = 900;
-    private final int RAND_POS = 29;
-    private final int DELAY = 140;
-
-    private final int x[] = new int[ALL_DOTS];
-    private final int y[] = new int[ALL_DOTS];
-
-    private int dots;
-    private int apple_x;
-    private int apple_y;
-
-    private boolean leftDirection = false;
-    private boolean rightDirection = true;
-    private boolean upDirection = false;
-    private boolean downDirection = false;
-    private boolean inGame = true;
-
-    private Timer timer;
-    private Image ball;
-    private Image apple;
-    private Image head;
-
-    public Board() {
-        
-        initBoard();
-    }
-    
-    private void initBoard() {
-
-        addKeyListener(new TAdapter());
-        setBackground(Color.black);
-        setFocusable(true);
-
-        setPreferredSize(new Dimension(B_WIDTH, B_HEIGHT));
-        loadImages();
-        initGame();
+    protected enum Tetrominoe {
+        NoShape, ZShape, SShape, LineShape,
+        TShape, SquareShape, LShape, MirroredLShape
     }
 
-    private void loadImages() {
+    private Tetrominoe pieceShape;
+    private int[][] coords;
 
-        ImageIcon iid = new ImageIcon("src/resources/dot.png");
-        ball = iid.getImage();
+    public Shape() {
 
-        ImageIcon iia = new ImageIcon("src/resources/apple.png");
-        apple = iia.getImage();
-
-        ImageIcon iih = new ImageIcon("src/resources/head.png");
-        head = iih.getImage();
+        coords = new int[4][2];
+        setShape(Tetrominoe.NoShape);
     }
 
-    private void initGame() {
+    void setShape(Tetrominoe shape) {
 
-        dots = 3;
+        int[][][] coordsTable = new int[][][]{
+                {{0, 0}, {0, 0}, {0, 0}, {0, 0}},
+                {{0, -1}, {0, 0}, {-1, 0}, {-1, 1}},
+                {{0, -1}, {0, 0}, {1, 0}, {1, 1}},
+                {{0, -1}, {0, 0}, {0, 1}, {0, 2}},
+                {{-1, 0}, {0, 0}, {1, 0}, {0, 1}},
+                {{0, 0}, {1, 0}, {0, 1}, {1, 1}},
+                {{-1, -1}, {0, -1}, {0, 0}, {0, 1}},
+                {{1, -1}, {0, -1}, {0, 0}, {0, 1}}
+        };
 
-        for (int z = 0; z < dots; z++) {
-            x[z] = 50 - z * 10;
-            y[z] = 50;
+        for (int i = 0; i < 4; i++) {
+
+            System.arraycopy(coordsTable[shape.ordinal()], 0, coords, 0, 4);
         }
-        
-        locateApple();
 
-        timer = new Timer(DELAY, this);
-        timer.start();
+        pieceShape = shape;
     }
 
-    @Override
-    public void paintComponent(Graphics g) {
-        super.paintComponent(g);
+    private void setX(int index, int x) {
 
-        doDrawing(g);
-    }
-    
-    private void doDrawing(Graphics g) {
-        
-        if (inGame) {
-
-            g.drawImage(apple, apple_x, apple_y, this);
-
-            for (int z = 0; z < dots; z++) {
-                if (z == 0) {
-                    g.drawImage(head, x[z], y[z], this);
-                } else {
-                    g.drawImage(ball, x[z], y[z], this);
-                }
-            }
-
-            Toolkit.getDefaultToolkit().sync();
-
-        } else {
-
-            gameOver(g);
-        }        
+        coords[index][0] = x;
     }
 
-    private void gameOver(Graphics g) {
-        
-        String msg = "Game Over";
-        Font small = new Font("Helvetica", Font.BOLD, 14);
-        FontMetrics metr = getFontMetrics(small);
+    private void setY(int index, int y) {
 
-        g.setColor(Color.white);
-        g.setFont(small);
-        g.drawString(msg, (B_WIDTH - metr.stringWidth(msg)) / 2, B_HEIGHT / 2);
+        coords[index][1] = y;
     }
 
-    private void checkApple() {
+    int x(int index) {
 
-        if ((x[0] == apple_x) && (y[0] == apple_y)) {
-
-            dots++;
-            locateApple();
-        }
+        return coords[index][0];
     }
 
-    private void move() {
+    int y(int index) {
 
-        for (int z = dots; z > 0; z--) {
-            x[z] = x[(z - 1)];
-            y[z] = y[(z - 1)];
-        }
-
-        if (leftDirection) {
-            x[0] -= DOT_SIZE;
-        }
-
-        if (rightDirection) {
-            x[0] += DOT_SIZE;
-        }
-
-        if (upDirection) {
-            y[0] -= DOT_SIZE;
-        }
-
-        if (downDirection) {
-            y[0] += DOT_SIZE;
-        }
+        return coords[index][1];
     }
 
-    private void checkCollision() {
+    Tetrominoe getShape() {
 
-        for (int z = dots; z > 0; z--) {
-
-            if ((z > 4) && (x[0] == x[z]) && (y[0] == y[z])) {
-                inGame = false;
-            }
-        }
-
-        if (y[0] >= B_HEIGHT) {
-            inGame = false;
-        }
-
-        if (y[0] < 0) {
-            inGame = false;
-        }
-
-        if (x[0] >= B_WIDTH) {
-            inGame = false;
-        }
-
-        if (x[0] < 0) {
-            inGame = false;
-        }
-        
-        if (!inGame) {
-            timer.stop();
-        }
+        return pieceShape;
     }
 
-    private void locateApple() {
+    void setRandomShape() {
 
-        int r = (int) (Math.random() * RAND_POS);
-        apple_x = ((r * DOT_SIZE));
+        var r = new Random();
+        int x = Math.abs(r.nextInt()) % 7 + 1;
 
-        r = (int) (Math.random() * RAND_POS);
-        apple_y = ((r * DOT_SIZE));
+        Tetrominoe[] values = Tetrominoe.values();
+        setShape(values[x]);
     }
 
-    @Override
-    public void actionPerformed(ActionEvent e) {
+    public int minX() {
 
-        if (inGame) {
+        int m = coords[0][0];
 
-            checkApple();
-            checkCollision();
-            move();
+        for (int i = 0; i < 4; i++) {
+
+            m = Math.min(m, coords[i][0]);
         }
 
-        repaint();
+        return m;
     }
 
-    private class TAdapter extends KeyAdapter {
 
-        @Override
-        public void keyPressed(KeyEvent e) {
+    int minY() {
 
-            int key = e.getKeyCode();
+        int m = coords[0][1];
 
-            if ((key == KeyEvent.VK_LEFT) && (!rightDirection)) {
-                leftDirection = true;
-                upDirection = false;
-                downDirection = false;
-            }
+        for (int i = 0; i < 4; i++) {
 
-            if ((key == KeyEvent.VK_RIGHT) && (!leftDirection)) {
-                rightDirection = true;
-                upDirection = false;
-                downDirection = false;
-            }
-
-            if ((key == KeyEvent.VK_UP) && (!downDirection)) {
-                upDirection = true;
-                rightDirection = false;
-                leftDirection = false;
-            }
-
-            if ((key == KeyEvent.VK_DOWN) && (!upDirection)) {
-                downDirection = true;
-                rightDirection = false;
-                leftDirection = false;
-            }
+            m = Math.min(m, coords[i][1]);
         }
+
+        return m;
+    }
+
+    Shape rotateLeft() {
+
+        if (pieceShape == Tetrominoe.SquareShape) {
+
+            return this;
+        }
+
+        var result = new Shape();
+        result.pieceShape = pieceShape;
+
+        for (int i = 0; i < 4; i++) {
+
+            result.setX(i, y(i));
+            result.setY(i, -x(i));
+        }
+
+        return result;
+    }
+
+    Shape rotateRight() {
+
+        if (pieceShape == Tetrominoe.SquareShape) {
+
+            return this;
+        }
+
+        var result = new Shape();
+        result.pieceShape = pieceShape;
+
+        for (int i = 0; i < 4; i++) {
+
+            result.setX(i, -y(i));
+            result.setY(i, x(i));
+        }
+
+        return result;
     }
 }
-
